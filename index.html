@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HOUSEHOLD SCORING MODEL</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+
+    img.logo {
+      max-width: 200px;
+      display: block;
+      margin: 0 auto 20px;
+    }
+
+    h1, h2 {
+      color: #005792;
+       margin: 5px;
+  text-align: center; 
+
+    }
+
+    .section {
+      background: #fff;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .flex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .form-group {
+      flex: 1 1 30%;
+      min-width: 250px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      margin: 10px 10px 20px 0;
+      padding: 10px 20px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #218838;
+    }
+    
+
+    #result {
+      background: #fff;
+      padding: 20px;
+      border-left: 5px solid #005792;
+      border-radius: 8px;
+      margin-top: 30px;
+    }
+
+    ul {
+      margin-top: 0;
+      padding-left: 18px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    .required-star {
+  color: red;
+  margin-left: 5px;
+}
+
+    @media (max-width: 768px) {
+      .form-group {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <!-- LOGO -->
+  <img src="https://static.wixstatic.com/media/eb7a97_ade82ad9713a44899cab4dd58b6a7325~mv2.jpg" class="logo" />
+
+  <!-- HEADER -->
+  <h1 >HOUSEHOLD SCORING MODEL</h1>
+
+  <!-- LOAN FORM SECTION -->
+  <div class="section">
+    <h2>Loan Form Details <span class="required-star">*</span></h2>
+    <form id="loanForm">
+      <div class="flex-row">
+        <div class="form-group">
+          <label for="Zone">Zone</label>
+          <input type="text" id="Zone" name="Zone" required>
+        </div>
+        <div class="form-group">
+          <label for="Branch">Branch</label>
+          <input type="text" id="Branch" name="Branch" required>
+        </div>
+        <div class="form-group">
+          <label for="ApplicationNumber">Application Number</label>
+          <input type="text" id="ApplicationNumber" name="ApplicationNumber" required>
+        </div>
+        <div class="form-group">
+          <label for="ApplicantName">Applicant Name</label>
+          <input type="text" id="ApplicantName" name="ApplicantName" required>
+        </div>
+        <div class="form-group">
+          <label for="RoName">RO NAME</label>
+          <input type="text" id="RoName" name="RoName" required>
+        </div>
+        <div class="form-group">
+          <label for="RoID">RO ID</label>
+          <input type="text" id="RoID" name="RoID" required>
+        </div>
+        <div class="form-group">
+          <label for="CreditEmpID">Credit Manager EMP ID</label>
+          <input type="text" id="CreditEmpID" name="Credit Manager EMP ID" required>
+        </div>
+        <div class="form-group">
+          <label for="CreditEmpName">Credit Manager Name</label>
+          <input type="text" id="CreditEmpName" name="Credit Manager EMP NAME" required>
+        </div>
+        <div class="form-group">
+          <label for="mobileNumber">Customer Mobile Number</label>
+          <input type="tel" id="mobileNumber" name="mobileNumber" pattern="[0-9]{10}" maxlength="10" required>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- DYNAMIC SCORING FORM SECTIONS -->
+  <form id="form"></form>
+
+  <!-- BUTTONS -->
+  <button onclick="calculateScore()" type="button">Calculate Score</button>
+  <button onclick="downloadPDF()" type="button">Download Report (PDF)</button>
+
+  <!-- RESULT DISPLAY -->
+  <div id="result"></div>
+
+  <!-- SCRIPT -->
+  <script>
+      const sections = {
+      "House Size & Structure Details": {
+        "Type of structure": { "Pucca": 3, "Semi-Pucca": 2, "Kachcha": 1 },
+        "Size of house (sq.ft.)": { ">600": 3, "300-600": 2, "<300": 1 },
+        "Plot area visible": { "Yes": 2, "No": 0 },
+        "Number of floors": { "2+": 3, "1": 2, "Shared/kutcha": 1 },
+        "External paint & boundary": { "Both": 3, "Any one": 2, "None": 1 },
+        "Sanitation (toilet + drainage)": { "Both": 3, "Any one": 2, "None": 1 },
+        "Number of rooms": { "≥3": 3, "2": 2, "1": 1 }
+      },
+      "Utilities & Basic Infrastructure": {
+        "Electricity": { "Available": 2, "Intermittent": 1, "None": 0 },
+        "Water source": { "Piped/borewell": 2, "Hand pump/shared": 1, "Unreliable": 0 },
+        "Toilet": { "Private": 2, "Shared": 1, "None": 0 },
+        "Waste disposal": { "Regular/organized": 2, "Irregular/open": 0 },
+        "Internet": { "Router/Line Plan": 2, "Mobile only": 1, "None": 0 }
+      },
+      "Other Assets & Net Worth Indicators": {
+        "Agricultural land owned": { ">3 acres": 3, "1–3 acres": 2, "≤1 acre": 1, "None": 0 },
+        "Irrigation/farming equipment": { "Machine Worth >1 Lac": 2, "Machine worth <=1 Lac": 1, "None": 0 },
+        "Commercial property/shop/stall owned": { "Rented to others": 3, "Permanent shop": 2, "Temporary stall": 1, "None": 0 },
+        "Rental income source": { ">₹5000": 3, "₹2000–5000": 2, "<=₹2000": 1, "None": 0 },
+        "Ownership of Additional Property": { "Yes (urban/semi-urban)": 2, "Yes (village only)": 1, "No": 0 },
+        "Gold/Silver": { ">100g": 3, "30–100g": 2, "10–30g": 1, "<10g": 0 },
+        "Investment Assets": { ">₹1Lac": 4, "₹50K–1Lac": 2, "≤₹50K": 1, "None": 0 }
+      },
+      "Household Composition & Medical Risk": {
+        "No. of earning members": { "3+": 4, "2": 3, "1": 2 },
+        "Total household size": { ">5": 2, "3–5": 1, "1–2": 0 },
+        "Dependency ratio": { "<2": 1, "2–3": 0, ">3": -1 },
+        "Elderly (60+) in household": { "None": 0, "1": -1, "2": -2 },
+        "Chronic illness in family": { "None": 0, "1": -1, "2+": -2 },
+        "Person with disability (PWD)": { "No": 0, "Yes": -2 },
+        "Health expenses burden": { "<₹500": 1, "₹500–1500": 0, ">₹1500": -1 }
+      },
+      "Lifestyle & Stability Indicators": {
+        "Uses LPG": { "Yes": 1, "No": 0 },
+        "Family decor/photos/calendars": { "Yes": 1, "No": 0 },
+        "Curtains/mats/bedsheets": { "Yes": 1, "No": 0 },
+        "Dedicated puja space": { "Yes": 1, "No": 0 },
+        "Tidy, organized interior": { "Yes": 1, "No": 0 }
+      },
+      "Education & Literacy": {
+        "Head of family: Literate": { "Yes": 1, "No": 0 },
+        "Head of family: 10th pass or above": { "Yes": 1, "No": 0 },
+        "Any graduate in family": { "Yes": 1, "No": 0 },
+        "Children enrolled in private school": { "Yes": 1, "No": 0 },
+        "Books/study space at home": { "Yes": 1, "No": 0 }
+      },
+      "Income & Occupation": {
+        "Primary Source": { "Salaried": 3, "Self-employed": 2, "Daily Wage": 1, "None": 0 },
+        "Secondary Source": { "Shop/small business": 3, "Agriculture": 2, "None": 0 },
+        "Third  Source": { "Shop/small business": 3, "Agriculture": 2, "None": 0 }
+      },
+      "Transport & Mobility": {
+        "Vehicle 1": { "Car": 4, "Auto": 3, "Motorcycle/Scooter": 2, "Bicycle": 1, "None": 0 },
+        "Vehicle 2": { "Car": 4, "Auto": 3, "Motorcycle/Scooter": 2, "Bicycle": 1, "None": 0 },
+        "Vehicle 3": { "Car": 4, "Auto": 3, "Motorcycle/Scooter": 2, "Bicycle": 1, "None": 0 },
+        "Vehicle 4": { "Car": 4, "Auto": 3, "Motorcycle/Scooter": 2, "Bicycle": 1, "None": 0 },
+        "Vehicle 4": { "Car": 4, "Auto": 3, "Motorcycle/Scooter": 2, "Bicycle": 1, "None": 0 }
+        
+      }
+    };
+
+    const weightedSections = {
+      "Electronics & Connectivity": {
+        "Basic Mobile/Telephone Handset": 1,
+        "Smartphone (Max3)": 2,
+        "TV with DTH/cable": 2,
+        "Laptop/Computer": 3,
+        "Bluetooth speaker/music system": 2,
+        "LED bulbs in use(Optional)": 2
+      },
+      "Household Assets & Furniture": {
+        "Ceiling fan": 2,
+        "Gas stove with 2+ burners": 1,
+        "Water purifier/filter (RO, Aquaguard, etc.)": 3,
+        "Wall clock": 1,
+        "Mirror (full size)": 1,
+        "Sewing machine": 1,
+        "Mattress with bedsheet/cover": 1,
+        "Plastic chairs/stools (visible use)": 1,
+        "Wooden or steel cupboard": 1,
+        "Dining table or study table": 2,
+        "Separate utensil storage rack": 1,
+        "Worship altar/puja shelf": 1,
+        "Pressure cooker or induction stove": 1,
+        "IGL Connection/Gas Pipeline": 2,
+        "Cot/bed": 1,
+        "Centre Table": 1,
+        "Sofa": 2,
+        "Refrigerator": 2,
+        "Mixer grinder": 1,
+        "Washing machine": 3,
+        "Inverter/solar backup": 3,
+        "Storage furniture": 2
+      },
+      "Livestock & Productive Assets": {
+        "Cow/Buffalo": 2,
+        "Goat/Sheep": 1,
+        "Poultry": 2,
+        "Beehives": 1,
+        "Tailoring machine": 1,
+        "Thresher/Harvester": 2
+      },
+      "Financial Behavior & Inclusion": {
+        "Bank Account": 2,
+        "Active savings (SHG, PO, chit fund)": 1,
+        "Insurance (life)": 1,
+        "Insurance (health/crop/accident)": 1,
+        "Loan from formal source (MFI, bank)": 1,
+        "Market Borrowing/Committee": -1,
+        "SHG/co-op membership": 1
+      }
+    };
+
+    const maxScoreCap = {
+      "House Size & Structure Details": 16,
+      "Utilities & Basic Infrastructure": 8,
+      "Other Assets & Net Worth Indicators": 6,
+      "Household Composition & Medical Risk": 5,
+      "Lifestyle & Stability Indicators": 3,
+      "Education & Literacy": 3,
+      "Income & Occupation": 4,
+      "Transport & Mobility": 10,
+      "Electronics & Connectivity": 8,
+      "Household Assets & Furniture": 28,
+      "Livestock & Productive Assets": 5,
+      "Financial Behavior & Inclusion": 4
+    };
+
+
+    function createForm() {
+      const form = document.getElementById("form");
+      const allSections = { ...sections, ...weightedSections };
+
+      for (const section in allSections) {
+        const div = document.createElement("div");
+        div.className = "section";
+        div.innerHTML = `<h2>${section} <span class="required-star">*</span></h2>`;
+
+
+        const row = document.createElement("div");
+        row.className = "flex-row";
+
+        for (const factor in allSections[section]) {
+          const group = document.createElement("div");
+          group.className = "form-group";
+          const label = document.createElement("label");
+          label.textContent = factor;
+
+          if (weightedSections[section]) {
+            const input = document.createElement("input");
+            input.type = "number";
+            input.min = 0;
+            input.value = 0;
+            input.name = `${section}||${factor}`;
+            group.appendChild(label);
+            group.appendChild(input);
+          } else {
+            const select = document.createElement("select");
+            select.name = `${section}||${factor}`;
+            select.innerHTML = `<option value="">-- Select --</option>`;
+            for (const opt in allSections[section][factor]) {
+              const option = document.createElement("option");
+              option.value = opt;
+              option.textContent = opt;
+              select.appendChild(option);
+            }
+            group.appendChild(label);
+            group.appendChild(select);
+          }
+
+          row.appendChild(group);
+        }
+
+        div.appendChild(row);
+        form.appendChild(div);
+      }
+    }
+
+function validateForm() {
+  const allInputs = document.querySelectorAll("#form select, #form input[type='number']");
+  for (const input of allInputs) {
+    if (input.tagName === "SELECT" && input.value === "") {
+      alert(`Please select a value for "${input.name.split("||")[1]}"`);
+      input.focus();
+      return false;
+    }
+    if (input.type === "number" && input.value === "") {
+      alert(`Please enter a number for "${input.name.split("||")[1]}"`);
+      input.focus();
+      return false;
+    }
+  }
+  return true;
+}
+
+function calculateScore() {
+  if (!validateForm()) return;
+
+  let total = 0;
+  let summary = "<h2>Selections Summary</h2>";
+  const allSections = { ...sections, ...weightedSections };
+
+  for (const section in allSections) {
+    summary += `<h3>${section}</h3><ul>`;
+    const sectionFactors = allSections[section];
+
+    let sectionScore = 0;
+
+    for (const factor in sectionFactors) {
+      const name = `${section}||${factor}`;
+      const input = document.querySelector(`[name="${name}"]`);
+      if (!input) continue;
+
+      let value = input.value || "Not selected";
+      let score = 0;
+
+      if (weightedSections[section]) {
+        const qty = parseInt(input.value) || 0;
+        score = qty * sectionFactors[factor];
+        value = qty; // ✅ Only show what user entered
+      } else {
+        score = sectionFactors[factor][input.value] || 0;
+      }
+      
+
+      sectionScore += score;
+      summary += `<li><strong>${factor}</strong>: ${value}</li>`;
+    }
+
+    // Cap the section score if a max is defined
+    const maxCap = maxScoreCap[section] ?? sectionScore;
+    const cappedScore = Math.min(sectionScore, maxCap);
+
+    total += cappedScore;
+
+    summary += `<li><strong>Section Total (Capped):</strong> ${cappedScore} / ${maxCap}</li>`;
+
+    summary += "</ul>";
+  }
+
+  const band = total <= 20 ? "Very Poor" :
+               total <= 40 ? "Marginal Low-Income" :
+               total <= 60 ? "Basic Stability" :
+               total <= 80 ? "Aspiring Middle" :
+               "Asset-Rich/Wealthy Rural Household";
+
+    const maxPossibleScore = Object.values(maxScoreCap).reduce((a, b) => a + b, 0);
+  const percentage = ((total / maxPossibleScore) * 100).toFixed(2);
+
+  summary += `<h3>Total Score: ${total} / ${maxPossibleScore} (${percentage}%)</h3><p><strong>Financial Band:</strong> ${band}</p>`;
+
+  document.getElementById("result").innerHTML = summary;
+  // Store summary info for PDF header
+window.finalScoreSummary = {
+  total,
+  maxPossibleScore,
+  percentage,
+  band
+};
+
+  document.getElementById("result").scrollIntoView({ behavior: "smooth" });
+}
+
+
+
+
+ function downloadPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  let y = 10;
+
+  // Load logo image
+  const logoUrl = "https://static.wixstatic.com/media/eb7a97_ade82ad9713a44899cab4dd58b6a7325~mv2.jpg";
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = logoUrl;
+
+  img.onload = function () {
+    doc.addImage(img, "JPEG", 80, y, 50, 20); // center image
+    y += 25;
+
+    doc.setFontSize(16);
+    doc.text("Household Scoring Report", 10, y);
+    if (window.finalScoreSummary) {
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      const summaryText1 = `Total Score: ${window.finalScoreSummary.total} / ${window.finalScoreSummary.maxPossibleScore} (${window.finalScoreSummary.percentage}%)`;
+      const summaryText2 = `Band: ${window.finalScoreSummary.band}`;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      doc.text(summaryText1, pageWidth - doc.getTextWidth(summaryText1) - 10, y);
+      y += 6;
+      doc.text(summaryText2, pageWidth - doc.getTextWidth(summaryText2) - 10, y);
+      y += 6;
+    }
+    
+    y += 10;
+
+
+    
+    // Form details
+    const fields = ["Zone", "Branch", "ApplicationNumber", "ApplicantName", "RoName", "RoID", "CreditEmpID", "CreditEmpName", "mobileNumber"];
+    doc.setFontSize(11);
+    fields.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    const label = id.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()); // Format: CreditEmpID -> Credit Emp ID
+    doc.setFont(undefined, 'bold');
+    doc.text(`${label}:`, 10, y);
+    doc.setFont(undefined, 'normal');
+    doc.text(`${el.value}`, 10 + doc.getTextWidth(`${label}: `), y);
+    y += 7;
+  }
+});
+
+
+    const html = document.getElementById("result").innerHTML;
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+
+    const lines = tempDiv.querySelectorAll("h2, h3, li, p");
+    lines.forEach(el => {
+  if (y > 280) { doc.addPage(); y = 10; }
+
+  if (el.tagName === "H2") {
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text(el.textContent, 10, y);
+    y += 8;
+  } else if (el.tagName === "H3") {
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(el.textContent, 10, y);
+    y += 7;
+  } else if (el.tagName === "LI" || el.tagName === "P") {
+    const text = el.textContent;
+    const parts = text.split(":");
+    if (parts.length > 1) {
+      const label = parts[0].trim() + ": ";
+      const value = parts.slice(1).join(":").trim();
+
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'normal');
+      doc.text(label, 10, y);
+
+      doc.setFont(undefined, 'bold');
+      doc.text(value, 10 + doc.getTextWidth(label), y);
+    } else {
+      // If no colon, print normally
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'normal');
+      doc.text(text, 10, y);
+    }
+    y += 6;
+  }
+});
+
+
+    doc.save("Household_Score_Report.pdf");
+  };
+}
+
+
+    window.onload = createForm;
+  </script>
+</body>
+</html>
